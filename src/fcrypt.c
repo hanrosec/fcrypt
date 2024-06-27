@@ -22,8 +22,7 @@ u8 *read_data(FILE *fptr) {
     return buffer;
 }
 
-void init_fcrypt_ctx(FCRYPT_CTX *ctx, u8 *password, u8 password_len, u32 *nonce)
-{
+void init_fcrypt_ctx(FCRYPT_CTX *ctx, u8 *password, u8 password_len, u32 *nonce) {
     /**
      * 1. derive key from password
      * 2. set key in ctx
@@ -48,7 +47,21 @@ void init_fcrypt_ctx(FCRYPT_CTX *ctx, u8 *password, u8 password_len, u32 *nonce)
 void generate_nonce(u32 *nonce) {
     u8 random_bytes[NONCE_SIZE*4];
     for (size_t i=0; i<NONCE_SIZE*4; i++) {
-        random_bytes[i] = rand() % 256; 
+        u8 rand_byte;
+        
+        #if defined(_WIN32) || defined(_WIN64)
+            rand_byte = rand() % 256;
+        #else
+            FILE *urandom = fopen("/dev/urandom", "r");
+            if (urandom == NULL) {
+                rand_byte = rand() % 256;
+            } else {
+                rand_byte = getc(urandom);
+            }
+            fclose(urandom);
+        #endif
+
+        random_bytes[i] = rand_byte;
         // TODO use better PRNG
         // consider using linux (/dev/urandom)
     }

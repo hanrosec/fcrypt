@@ -1,47 +1,52 @@
 MAKEFLAGS += --silent
 
 CC = gcc
-
 CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude -Ilib/chacha
 
 OBJDIR = build
-TESTDIR = tests
-LIBDIR = lib/chacha
 
-SRCS = $(wildcard src/*.c)
-TEST_SRCS = $(wildcard $(TESTDIR)/*.c)
+ifeq ($(OS),Windows_NT)
+    RM = del /f /q
+    TARGET = $(OBJDIR)\fcrypt.exe
+    LIBS =
+    MKDIR = mkdir
+else
+    RM = rm -f
+    TARGET = $(OBJDIR)/fcrypt
+    LIBS =
+    MKDIR = mkdir -p
+endif
 
-OBJS = $(SRCS:src/%.c=$(OBJDIR)/%.o)
-TEST_OBJS = $(TEST_SRCS:tests/%.c=$(OBJDIR)/%.o)
+SRCS = fcrypt.c main.c pbkdf.c
+OBJS = $(SRCS:%.c=$(OBJDIR)/%.o)
 
-TARGET = $(OBJDIR)\fcrypt.exe
+VPATH = src:lib/chacha
 
-LIBRARY = $(LIBDIR)/libchacha.a
+.PHONY: all clean run chacha
 
-all: $(TARGET)
+all: chacha $(TARGET)
 
-$(TARGET): $(OBJS) $(LIBRARY)
-	$(CC) $(CFLAGS) -o $@ $^ -L$(LIBDIR) -lchacha
+chacha:
+	$(MAKE) -C lib/chacha
 
-$(OBJDIR)/%.o: src/%.c | $(OBJDIR)
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -Llib/chacha -lchacha
+
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR)/%.o: tests/%.c | $(OBJDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(LIBRARY):
-	$(MAKE) -C $(LIBDIR)
 
 $(OBJDIR):
-	mkdir $(OBJDIR)
+	$(MKDIR) $(OBJDIR)
 
 run: $(TARGET)
-	$(TARGET)
+	./$(TARGET)
 
 clean:
-	if exist $(OBJDIR)\*.o del /f /q $(OBJDIR)\*.o
-	if exist $(TARGET) del /f /q $(TARGET)
-	if exist $(TEST_TARGET) del /f /q $(TEST_TARGET)
-	$(MAKE) -C $(LIBDIR) clean
-
-.PHONY: all clean run test
+	$(MAKE) -C lib/chacha clean
+ifeq ($(OS),Windows_NT)
+	$(RM) $(OBJDIR)\*.o
+	$(RM) $(TARGET)
+else
+	$(RM) $(OBJDIR)/*.o
+	$(RM) $(TARGET)
+endif
