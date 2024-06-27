@@ -1,0 +1,3 @@
+[submodule "chacha"]
+	path = lib/chacha
+	url = https://github.com/hanrosec/chacha.git
