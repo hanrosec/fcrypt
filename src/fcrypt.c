@@ -1,10 +1,12 @@
 #include "fcrypt.h"
 
-u8 *read_data(FILE *fptr) {
+u8 *read_data(FCRYPT_CTX *ctx, FILE *fptr) {
     // get size of file
     fseek(fptr, 0, SEEK_END);
     size_t size = ftell(fptr);
     fseek(fptr, 0, SEEK_SET);
+
+    ctx->data_size = size;
 
     u8 *buffer = (u8 *)malloc(size * sizeof(u8));
     if(buffer == NULL) {
@@ -32,6 +34,8 @@ void init_fcrypt_ctx(FCRYPT_CTX *ctx, u8 *password, u8 password_len, u32 *nonce)
     u32 lkey[KEY_SIZE];
     u8 processed_password[32];
     
+    sha3(password, password_len, ctx->password_hash, 32);
+
     process_password(password, password_len, processed_password);
 
     pbkdf(processed_password, 32, 0, key, 32);
@@ -69,4 +73,12 @@ void generate_nonce(u32 *nonce) {
     for (size_t i = 0; i < NONCE_SIZE; i++) {
         u8_to_u32(&random_bytes[i*4], &nonce[i]);
     }
+}
+
+void encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, u8 *ciphertext) {
+    encrypt(plaintext, ctx->data_size, ctx->key, ctx->nonce, ciphertext);
+}
+
+void decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, u8 *plaintext) {
+    decrypt(ciphertext, ctx->data_size, ctx->key, ctx->nonce, plaintext);
 }

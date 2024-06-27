@@ -17,7 +17,7 @@ else
     MKDIR = mkdir -p
 endif
 
-SRCS = fcrypt.c main.c pbkdf.c
+SRCS = fcrypt.c main.c pbkdf.c sha3.c
 OBJS = $(SRCS:%.c=$(OBJDIR)/%.o)
 
 VPATH = src:lib/chacha

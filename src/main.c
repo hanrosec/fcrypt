@@ -52,12 +52,14 @@ void print_u8(u8 *in, size_t l) {
     for (size_t i = 0; i < l; i++) {
         printf("%02x ", in[i]);
     }
+    printf("\n");
 }
 
 void print_u32(u32 *in, size_t l) {
     for (size_t i = 0; i < l; i++) {
         printf("%08x ", in[i]);
     }
+    printf("\n");
 }
 
 int main() {
@@ -67,19 +69,38 @@ int main() {
     u8 password[32] = {"5af0d8572a400b395af0d8572a400b39"};
     FCRYPT_CTX *ctx = (FCRYPT_CTX *)malloc(sizeof(FCRYPT_CTX));
 
-    u32 nonce[NONCE_SIZE];
-    generate_nonce(nonce);
+    u32 nonce[NONCE_SIZE] = {0x87664050, 0x2d587718, 0x90fecbf1};
+    // generate_nonce(nonce);
 
+    printf("nonce: ");
     print_u32(nonce, NONCE_SIZE);
 
     init_fcrypt_ctx(ctx, password, sizeof(password), nonce);
 
+    printf("password: ");
+    print_u8(password, sizeof(password));
+
+    printf("SHA3(password, 256): ");
+    print_u8(ctx->password_hash, 32);
+
     FILE *fp = fopen("tests/test_file", "r");
 
-    u8 *data = read_data(fp);
+    u8 *data = read_data(ctx, fp);
 
     fclose(fp);
 
-    printf("\n");
-    print_u8(data, 7);
+    printf("data: ");
+    print_u8(data, ctx->data_size);
+
+    u8 encrypted[ctx->data_size];
+    encrypt_data(ctx, data, encrypted);
+    
+    printf("encrypted data: ");
+    print_u8(encrypted, ctx->data_size);
+
+    u8 decrypted[ctx->data_size];
+    encrypt_data(ctx, encrypted, decrypted);
+
+    printf("decrypted data: ");
+    print_u8(decrypted, ctx->data_size);
 }
