@@ -10,17 +10,18 @@
 #ifndef _PBKDF_H
 #define _PBKDF_H
 
+#include "types.h"
 #include "chacha.h"
 
-extern uint32_t NONCE[3]; 
+extern u32 NONCE[3]; 
 /**
  * nonce is not really nonce here, but is used only because chacha requires it
  * I think it can be fixed because we are not reusing keys (this is user password)
 */
 
-void pbkdf(uint8_t *password, uint8_t password_len, uint32_t counter, uint8_t *key, size_t key_size);
+void pbkdf(u8 *password, u8 password_len, u32 counter, u8 *key, size_t key_size);
 
-void process_password(uint8_t *password, size_t password_len, uint8_t *processed);
-void u8_to_u32(uint8_t *src, uint32_t *dst);
+void process_password(u8 *password, size_t password_len, u8 *processed);
+void u8_to_u32(u8 *src, u32 *dst);
 
 #endif /* _PBKDF_H */
