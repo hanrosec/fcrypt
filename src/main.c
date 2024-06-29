@@ -50,6 +50,9 @@ const u8 *BANNER = (const u8 *)
 
 void print_u8(u8 *in, size_t l) {
     for (size_t i = 0; i < l; i++) {
+        if((i+1) % 64 == 0) {
+            printf("\n");
+        }
         printf("%02x ", in[i]);
     }
     printf("\n");
@@ -66,41 +69,37 @@ int main() {
     srand(time(NULL));
 
     printf("%s\n\n", BANNER);
+
     u8 password[32] = {"5af0d8572a400b395af0d8572a400b39"};
     FCRYPT_CTX *ctx = (FCRYPT_CTX *)malloc(sizeof(FCRYPT_CTX));
 
     u32 nonce[NONCE_SIZE] = {0x87664050, 0x2d587718, 0x90fecbf1};
     // generate_nonce(nonce);
 
-    printf("nonce: ");
-    print_u32(nonce, NONCE_SIZE);
+    // printf("nonce: ");
+    // print_u32(nonce, NONCE_SIZE);
 
     init_fcrypt_ctx(ctx, password, sizeof(password), nonce);
 
-    printf("password: ");
-    print_u8(password, sizeof(password));
+    // printf("password: ");
+    // print_u8(password, sizeof(password));
 
     printf("SHA3(password, 256): ");
     print_u8(ctx->password_hash, 32);
 
-    FILE *fp = fopen("tests/test_file", "r");
+    FILE *fp = fopen("tests/big_file", "r");
+    if(fp == NULL) {
+        fprintf(stderr, "error opening file\n");
+        return -1;
+    }
 
-    u8 *data = read_data(ctx, fp);
+    u8 *data = read_raw(ctx, fp);
 
     fclose(fp);
 
-    printf("data: ");
-    print_u8(data, ctx->data_size);
+    write_fcrypt_file(ctx, fopen("tests/output", "w"), data);
 
-    u8 encrypted[ctx->data_size];
-    encrypt_data(ctx, data, encrypted);
+    u8 *plaintext = read_fcrypt_file(ctx, fopen("tests/output", "r"));
     
-    printf("encrypted data: ");
-    print_u8(encrypted, ctx->data_size);
-
-    u8 decrypted[ctx->data_size];
-    encrypt_data(ctx, encrypted, decrypted);
-
-    printf("decrypted data: ");
-    print_u8(decrypted, ctx->data_size);
+    print_u8(plaintext, 65*7);
 }

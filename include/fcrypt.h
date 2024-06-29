@@ -22,8 +22,9 @@ void generate_nonce(u32 *nonce);
 void encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, u8 *ciphertext);
 void decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, u8 *plaintext);
 
-u8 *read_data(FCRYPT_CTX *ctx, FILE *fptr);
-void write_data(FILE *fptr, u8 *data);
+u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr);
+u8 *read_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr);
+void write_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr, u8 *data);
 
 void get_password(FCRYPT_CTX *ctx);
 
