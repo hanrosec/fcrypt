@@ -1,27 +1,5 @@
 #include "fcrypt.h"
 
-// u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr) {
-//     // get size of file
-//     fseek(fptr, 0, SEEK_END);
-//     ctx->data_size = ftell(fptr);
-//     fseek(fptr, 0, SEEK_SET);
-
-//     u8 *buffer = (u8 *)malloc(ctx->data_size);
-//     if(buffer == NULL) {
-//         fprintf(stderr, "error allocating memory\n");
-//         return NULL;
-//     }
-
-//     char ch;
-//     size_t i = 0;
-//     do {
-//         ch = getc(fptr);
-//         buffer[i++] = ch;
-//     } while(ch != EOF);
-
-//     return buffer;
-// }
-
 u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr) {
     // get size of file
     fseek(fptr, 0, SEEK_END);
@@ -127,7 +105,7 @@ int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *cipherte
 
     int len;
     int ciphertext_len = 0;
-    int chunk_size = 16; // AES block size in bytes
+    int chunk_size = 16;
 
     if (EVP_EncryptInit_ex(evp_ctx, EVP_aes_256_ctr(), NULL, ctx->key, ctx->iv) != 1) {
         fprintf(stderr, "error while initializing encryption!\n");
@@ -140,8 +118,6 @@ int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *cipherte
         if (chunk_len > chunk_size) {
             chunk_len = chunk_size;
         }
-        // print_u8(ciphertext + ciphertext_len, 16);
-        // printf("%d\n", chunk_len);
         if (EVP_EncryptUpdate(evp_ctx, ciphertext + ciphertext_len, &len, plaintext + i, chunk_len) != 1) {
             fprintf(stderr, "error while encrypting!\n");
             EVP_CIPHER_CTX_free(evp_ctx);
@@ -173,7 +149,7 @@ int decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, int ciphertext_len, u8 *plaint
 
     int len;
     int plaintext_len = 0;
-    int chunk_size = 16; // AES block size in bytes
+    int chunk_size = 16;
 
     if(EVP_DecryptInit_ex(evp_ctx, EVP_aes_256_ctr(), NULL, ctx->key, ctx->iv) != 1) {
         fprintf(stderr, "error while initializing decryption!\n");
