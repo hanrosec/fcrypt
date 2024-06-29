@@ -1,7 +1,7 @@
 MAKEFLAGS += --silent
 
 CC = gcc
-CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude -Ilib/chacha
+CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude -g
 
 OBJDIR = build
 
@@ -17,22 +17,18 @@ else
     MKDIR = mkdir -p
 endif
 
-SRCS = fcrypt.c main.c pbkdf.c sha3.c
-OBJS = $(SRCS:%.c=$(OBJDIR)/%.o)
+SRCDIR = src
+SRCS = $(wildcard $(SRCDIR)/*.c)
+OBJS = $(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
-VPATH = src:lib/chacha
+.PHONY: all clean run
 
-.PHONY: all clean run chacha
-
-all: chacha $(TARGET)
-
-chacha:
-	$(MAKE) -C lib/chacha
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -Llib/chacha -lchacha
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -lssl -lcrypto
 
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR):
@@ -42,7 +38,6 @@ run: $(TARGET)
 	./$(TARGET)
 
 clean:
-	$(MAKE) -C lib/chacha clean
 ifeq ($(OS),Windows_NT)
 	$(RM) $(OBJDIR)\*.o
 	$(RM) $(TARGET)

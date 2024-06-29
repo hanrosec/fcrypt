@@ -2,35 +2,19 @@
 
 u32 NONCE[3] = {0x14159265, 0x35897932, 0x38462643}; // pi
 
-void pbkdf(u8 *password, u8 password_len, u32 counter, u8 *key, size_t key_size) {
-    CHACHA_CTX ctx;
-    
-    u8 processed_password[password_len];
-    u32 key_for_chacha[8];
-    u32 keystream32[key_size];
-    u8 keystream8[key_size*8];
-    
-    // make password correct length
-    process_password(password, password_len, processed_password);
-
-    /**
-    * ? use some hash function to increase entropy 
-    * ? must be different than hash function used in encrypted file
-    */
-
-    // convert password from u8 to u32 for chacha
-    for (size_t i = 0; i < 8; i ++) {
-        u8_to_u32(&processed_password[i * 4], &key_for_chacha[i]);
+void pbkdf(char *password, size_t password_len, u8 *key, size_t key_size) {
+    u8 salt[] = {
+        0x61, 0x20, 0x6e, 0x6f,
+        0x74, 0x68, 0x69, 0x6e,
+        0x67, 0x2d, 0x75, 0x70,
+        0x2d, 0x6d, 0x79, 0x2d,
+        0x73, 0x6c, 0x65, 0x65,
+        0x76, 0x65, 0x20, 0x73,
+        0x61, 0x6c, 0x74};
+    if (PKCS5_PBKDF2_HMAC(password, password_len, salt, sizeof(salt), 4096, EVP_sha1(), key_size, key) == 0) {
+        fprintf(stderr, "error deriving key!");
+        key = NULL;
     }
-
-    init_chacha_ctx(&ctx, key_for_chacha, NONCE, counter);
-
-    // generate chacha keystream
-    chacha_generate_keystream(&ctx, 1, keystream32);
-    
-    // use only desired length of previously generated key
-    serialize(keystream32, keystream8);
-    memcpy(key, keystream8, key_size);
 }
 
 void process_password(u8 *password, size_t password_len, u8 *processed) { 

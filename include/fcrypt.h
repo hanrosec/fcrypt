@@ -3,24 +3,23 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <openssl/evp.h>
 
 #include "types.h"
-#include "chacha.h"
 #include "pbkdf.h"
 #include "sha3.h"
 
 typedef struct fcrypt_ctx {
     u8 password_hash[32];
-    u32 nonce[NONCE_SIZE];
-    u32 key[KEY_SIZE];
-    size_t data_size;
+    u8 iv[16];
+    u8 key[32];
+    int data_size;
 } FCRYPT_CTX;
 
-void init_fcrypt_ctx(FCRYPT_CTX *ctx, u8 *password, u8 password_len, u32 *nonce);
-void generate_nonce(u32 *nonce);
+void init_fcrypt_ctx(FCRYPT_CTX *ctx, char *password, u8 password_len, u8 *iv);
 
-void encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, u8 *ciphertext);
-void decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, u8 *plaintext);
+int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *ciphertext);
+int decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, int ciphertext_len, u8 *plaintext);
 
 u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr);
 u8 *read_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr);

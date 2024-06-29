@@ -33,8 +33,8 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <openssl/rand.h>
 
-#include "chacha.h"
 #include "pbkdf.h"
 #include "fcrypt.h"
 #include "types.h"
@@ -50,9 +50,6 @@ const u8 *BANNER = (const u8 *)
 
 void print_u8(u8 *in, size_t l) {
     for (size_t i = 0; i < l; i++) {
-        if((i+1) % 64 == 0) {
-            printf("\n");
-        }
         printf("%02x ", in[i]);
     }
     printf("\n");
@@ -70,36 +67,124 @@ int main() {
 
     printf("%s\n\n", BANNER);
 
-    u8 password[32] = {"5af0d8572a400b395af0d8572a400b39"};
+    char password[4] = {"test"};
+    u8 iv[16] = {0xff,0xae,0xdc,0x8c,0xad,0xf2,0x79,0x1c,0x02,0x1c,0xd8,0x17,0x19,0x06,0xa6,0xa2};
+
+    printf("Initializing FCRYPT_CTX...\n");
     FCRYPT_CTX *ctx = (FCRYPT_CTX *)malloc(sizeof(FCRYPT_CTX));
-
-    u32 nonce[NONCE_SIZE] = {0x87664050, 0x2d587718, 0x90fecbf1};
-    // generate_nonce(nonce);
-
-    // printf("nonce: ");
-    // print_u32(nonce, NONCE_SIZE);
-
-    init_fcrypt_ctx(ctx, password, sizeof(password), nonce);
-
-    // printf("password: ");
-    // print_u8(password, sizeof(password));
-
-    printf("SHA3(password, 256): ");
-    print_u8(ctx->password_hash, 32);
-
-    FILE *fp = fopen("tests/big_file", "r");
-    if(fp == NULL) {
-        fprintf(stderr, "error opening file\n");
-        return -1;
+    if (!ctx) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        return 1;
     }
 
-    u8 *data = read_raw(ctx, fp);
+    printf("Initializing FCRYPT_CTX with password and IV...\n");
+    init_fcrypt_ctx(ctx, password, sizeof(password), iv);
+    print_u8(ctx->key, sizeof(ctx->key));
+    print_u8(ctx->iv, sizeof(ctx->iv));
 
-    fclose(fp);
+    printf("Opening input file...\n");
+    FILE *fptr = fopen("tests/big_file", "rb");
+    if (!fptr) {
+        fprintf(stderr, "Failed to open input file.\n");
+        free(ctx);
+        return 1;
+    }
 
-    write_fcrypt_file(ctx, fopen("tests/output", "w"), data);
+    printf("Reading input file...\n");
+    u8 *plaintext = read_raw(ctx, fptr);
+    fclose(fptr);
+    if (!plaintext) {
+        fprintf(stderr, "Failed to read input file.\n");
+        free(ctx);
+        return 1;
+    }
 
-    u8 *plaintext = read_fcrypt_file(ctx, fopen("tests/output", "r"));
-    
-    print_u8(plaintext, 65*7);
+    printf("Encrypting data...\n");
+    u8 ciphertext[ctx->data_size];
+
+    print_u8(plaintext, 1024);
+    printf("%d\n", ctx->data_size);
+
+    int ciphertext_len = encrypt_data(ctx, plaintext, ctx->data_size, ciphertext);
+    if (ciphertext_len < 0) {
+        fprintf(stderr, "Failed to encrypt data.\n");
+        free(ctx);
+        free(plaintext);
+        return 1;
+    }
+
+    printf("Opening cipher file...\n");
+    FILE *fptr2 = fopen("tests/cipher", "wb");
+    if (!fptr2) {
+        fprintf(stderr, "Failed to open cipher file.\n");
+        free(ctx);
+        free(plaintext);
+        return 1;
+    }
+
+    printf("Writing encrypted data to cipher file...\n");
+    fwrite(ciphertext, 1, ciphertext_len, fptr2);
+    fclose(fptr2);
+
+    free(ctx);
+    free(plaintext);
+
+    printf("Initializing new FCRYPT_CTX...\n");
+    FCRYPT_CTX *new_ctx = (FCRYPT_CTX *)malloc(sizeof(FCRYPT_CTX));
+    init_fcrypt_ctx(new_ctx, password, sizeof(password), iv);
+
+    FILE *fptr3 = fopen("tests/cipher", "rb");
+    if (!fptr3) {
+        fprintf(stderr, "Failed to open input file.\n");
+        free(new_ctx);
+        return 1;
+    }
+
+    u8 *ciphertext2 = read_raw(new_ctx, fptr3);
+    fclose(fptr3);
+
+    if (!ciphertext2) {
+        fprintf(stderr, "Failed to read ciphertext.\n");
+        free(new_ctx);
+        return 1;
+    }
+
+    printf("Decrypting data...\n");
+    u8 *plaintext2 = (u8 *)malloc(new_ctx->data_size);
+    if (!plaintext2) {
+        fprintf(stderr, "Failed to allocate memory for decrypted data.\n");
+        free(new_ctx);
+        free(ciphertext2);
+        return 1;
+    }
+
+    int plaintext_len = decrypt_data(new_ctx, ciphertext2, new_ctx->data_size, plaintext2);
+    if (plaintext_len < 0) {
+        fprintf(stderr, "Failed to decrypt data.\n");
+        free(new_ctx);
+        free(ciphertext2);
+        free(plaintext2);
+        return 1;
+    }
+
+    printf("Opening cipher file for decrypted data...\n");
+    FILE *fptr4 = fopen("tests/big_file_decrypted", "wb");
+    if (!fptr4) {
+        fprintf(stderr, "Failed to open cipher file.\n");
+        free(new_ctx);
+        free(ciphertext2);
+        free(plaintext2);
+        return 1;
+    }
+
+    printf("Writing decrypted data to cipher file...\n");
+    fwrite(plaintext2, 1, plaintext_len, fptr4);
+    fclose(fptr4);
+
+    free(new_ctx);
+    free(ciphertext2);
+    free(plaintext2);
+
+    printf("Decryption successful.\n");
+    return 0;
 }

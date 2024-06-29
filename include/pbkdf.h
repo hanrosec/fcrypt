@@ -10,8 +10,10 @@
 #ifndef _PBKDF_H
 #define _PBKDF_H
 
+#include <openssl/evp.h>
+#include <string.h>
+
 #include "types.h"
-#include "chacha.h"
 
 extern u32 NONCE[3]; 
 /**
@@ -19,7 +21,7 @@ extern u32 NONCE[3];
  * I think it can be fixed because we are not reusing keys (this is user password)
 */
 
-void pbkdf(u8 *password, u8 password_len, u32 counter, u8 *key, size_t key_size);
+void pbkdf(char *password, size_t password_len, u8 *key, size_t key_size);
 
 void process_password(u8 *password, size_t password_len, u8 *processed);
 void u8_to_u32(u8 *src, u32 *dst);
