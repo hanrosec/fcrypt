@@ -69,7 +69,7 @@ int main() {
 
     char password[4] = {"test"};
     u8 iv[16] = {0xff,0xae,0xdc,0x8c,0xad,0xf2,0x79,0x1c,0x02,0x1c,0xd8,0x17,0x19,0x06,0xa6,0xa2};
-    char *_FILE = {"tests/bins/big_random"};
+    char *_FILE = {"tests/bins/medium_random"};
 
     FCRYPT_CTX *ctx = (FCRYPT_CTX *)malloc(sizeof(FCRYPT_CTX));
     init_fcrypt_ctx(ctx, password, sizeof(password), iv);
@@ -77,7 +77,7 @@ int main() {
     FILE *plaintext_file = fopen(_FILE, "rb");
     u8 *plaintext = read_raw(ctx, plaintext_file);
 
-    FILE *fcrypt_file = fopen("tests/big_random.fc", "wb");
+    FILE *fcrypt_file = fopen("tests/medium_random.fc", "wb");
     write_fcrypt_file(ctx, fcrypt_file, plaintext);
     fclose(fcrypt_file);
 
@@ -86,11 +86,11 @@ int main() {
     FCRYPT_CTX *new_ctx = (FCRYPT_CTX *)malloc(sizeof(FCRYPT_CTX));
     init_fcrypt_ctx(new_ctx, password, sizeof(password), iv);
 
-    FILE *ciphertext_file = fopen("tests/big_random.fc", "rb");
+    FILE *ciphertext_file = fopen("tests/medium_random.fc", "rb");
     u8 *plaintext2 = read_fcrypt_file(new_ctx, ciphertext_file);
     fclose(ciphertext_file);
 
-    FILE *plaintext2_file = fopen("tests/bins/big_random_decrypted", "wb");
+    FILE *plaintext2_file = fopen("tests/bins/medium_random_decrypted", "wb");
     fwrite(plaintext2, 1, new_ctx->data_size-16, plaintext2_file);
     fclose(plaintext2_file);
 }
