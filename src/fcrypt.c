@@ -13,7 +13,7 @@ u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr) {
     }
 
     int ch;
-    size_t i = 0;
+    int i = 0;
     while((ch = getc(fptr))!= EOF) {
         if(i >= ctx->data_size) {
             fprintf(stderr, "buffer overflow\n");
@@ -32,15 +32,16 @@ void write_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr, u8 *data) {
     u8 *ciphertext = (u8 *)malloc(ctx->data_size);
     encrypt_data(ctx, data, ctx->data_size, ciphertext);
 
-    size_t total_len = 44 + ctx->data_size;
+    size_t total_len = 48 + ctx->data_size;
 
     u8 *buffer = (u8 *)malloc(total_len);
 
     memcpy(buffer, ctx->password_hash, 32);
-    memcpy(buffer+32, ctx->iv, 12);
-    memcpy(buffer+44, ciphertext, ctx->data_size);
+    memcpy(buffer+32, ctx->iv, 16);
+    memcpy(buffer+48, ciphertext, ctx->data_size);
 
     fwrite(buffer, 1, total_len, fptr);
+    free(ciphertext);
     free(buffer);
 }
 
@@ -53,21 +54,21 @@ u8 *read_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr) {
      * 5. write decrypted data to file
      */
     fseek(fptr, 0, SEEK_END);
-    ctx->data_size = ftell(fptr) - 44;
+    ctx->data_size = ftell(fptr) - 32;
     fseek(fptr, 0, SEEK_SET);
-
-    u8 *plaintext = (u8 *)malloc(ctx->data_size);
 
     u8 *password_from_file = (u8 *)malloc(32);
     fread(password_from_file, sizeof(u8), 32, fptr);
 
     if(memcmp(password_from_file, ctx->password_hash, 32) == 0) {
-        u8 *buffer = (u8 *)malloc(ctx->data_size);
-        fread(buffer, sizeof(u8), ctx->data_size, fptr);
+        u8 *plaintext = (u8 *)malloc(ctx->data_size);
+        u8 *ciphertext = (u8 *)malloc(ctx->data_size);
 
-        memcpy(ctx->iv, buffer, 12);
+        fread(ciphertext, sizeof(u8), ctx->data_size, fptr);
 
-        // decrypt_data(ctx, buffer+12, plaintext);
+        memcpy(ctx->iv, ciphertext, 16);
+
+        decrypt_data(ctx, ciphertext+16, ctx->data_size, plaintext);
 
         return plaintext;
     } else {

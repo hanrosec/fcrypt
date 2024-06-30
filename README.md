@@ -4,10 +4,6 @@
 
 TODO
 
-## PBKDF
-
-TODO some digrams
-
 ## Encryption
 
 1. get password from user
