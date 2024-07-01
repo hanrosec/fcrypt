@@ -1,5 +1,7 @@
 # fcrypt
 
-## Usage
+## For usage run
 
-TODO
+```shell
+fcrypt -h
+```

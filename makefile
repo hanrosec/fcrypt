@@ -1,5 +1,3 @@
-MAKEFLAGS += --silent
-
 CC = gcc
 CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude -g
 
