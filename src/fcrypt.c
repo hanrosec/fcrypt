@@ -6,7 +6,7 @@ u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr) {
     ctx->data_size = ftell(fptr);
     fseek(fptr, 0, SEEK_SET);
 
-    u8 *buffer = (u8 *)malloc(ctx->data_size + 1); // +1 for null-terminator
+    u8 *buffer = (u8 *)malloc(ctx->data_size + 1);
     if(buffer == NULL) {
         fprintf(stderr, "error allocating memory\n");
         return NULL;
@@ -23,7 +23,7 @@ u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr) {
         buffer[i++] = (u8)ch;
     }
 
-    buffer[i] = '\0'; // null-terminate the buffer
+    buffer[i] = '\0';
 
     return buffer;
 }
