@@ -236,6 +236,15 @@ int main(int argc, char *argv[]) {
     } else if (decrypt) {
         u8 *plaintext = read_fcrypt_file(ctx, input_file);
         fclose(input_file);
+        if(plaintext == NULL) {
+            fprintf(stderr, "wrong password!\n");
+            free(ctx);
+            free(iv);
+            free(PASSWORD);
+            free(INPUT);
+            free(OUTPUT);
+            return 1;
+        }
 
         fwrite(plaintext, sizeof(u8), ctx->data_size-16, output_file); // i don't really know why but it works correctly only if i subtract 16 from data_size
         fclose(output_file);
