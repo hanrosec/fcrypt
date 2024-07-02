@@ -60,21 +60,6 @@ const u8 *BANNER = (const u8 *)
 "|_|  \\___|_|   \\__, | .__/ \\__|\n"
 "               |___/|_|        ";
 
-
-void print_u8(u8 *in, size_t l) {
-    for (size_t i = 0; i < l; i++) {
-        printf("%02x ", in[i]);
-    }
-    printf("\n");
-}
-
-void print_u32(u32 *in, size_t l) {
-    for (size_t i = 0; i < l; i++) {
-        printf("%08x ", in[i]);
-    }
-    printf("\n");
-}
-
 int main(int argc, char *argv[]) {
     printf("%s\n\n", BANNER);
 
