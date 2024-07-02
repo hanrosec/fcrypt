@@ -2,3 +2,4 @@
 build
 .idea
 tests/bins/*
+tests/txts/*

@@ -4,10 +4,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <openssl/evp.h>
+#include <stdbool.h>
 
 #include "types.h"
 #include "pbkdf.h"
 #include "sha3.h"
+
+extern bool verbose;
 
 typedef struct fcrypt_ctx {
     u8 password_hash[32];

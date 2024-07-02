@@ -114,6 +114,7 @@ int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *cipherte
         return -1;
     }
 
+    if(verbose) printf("encrypting data... (0/%d) chunks", (int)(plaintext_len/chunk_size));
     for (int i = 0; i < plaintext_len; i += chunk_size) {
         int chunk_len = plaintext_len - i;
         if (chunk_len > chunk_size) {
@@ -125,7 +126,10 @@ int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *cipherte
             return -1;
         }
         ciphertext_len += len;
+        if(verbose) printf("\rencrypting data... (%d/%d) chunks", (int)(i/chunk_size), (int)(plaintext_len/chunk_size)-1);
+        fflush(stdout);
     }
+    if(verbose) printf("\nsuccessfully encrypted data!\n");
 
     if (EVP_EncryptFinal_ex(evp_ctx, ciphertext + ciphertext_len, &len) != 1) {
         fprintf(stderr, "error while finalizing encryption!\n");
@@ -158,6 +162,7 @@ int decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, int ciphertext_len, u8 *plaint
         return -1;
     }
 
+    if(verbose) printf("decrypting data... (0/%d) chunks", (int)(plaintext_len/chunk_size));
     for (int i = 0; i < ciphertext_len; i += chunk_size) {
         int chunk_len = ciphertext_len - i;
         if (chunk_len > chunk_size) {
@@ -170,7 +175,11 @@ int decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, int ciphertext_len, u8 *plaint
             return -1;
         }
         plaintext_len += len;
+        if(verbose) printf("\rdecrypting data... (%d/%d) chunks", (int)(i/chunk_size), (int)(ciphertext_len/chunk_size)-1);
+        fflush(stdout);
     }
+    if(verbose) printf("\nsuccessfully decrypted data!\n");
+
 
     if (EVP_DecryptFinal_ex(evp_ctx, plaintext + plaintext_len, &len) != 1) {
         fprintf(stderr, "error while finalizing decryption!\n");

@@ -48,6 +48,8 @@
 
 #define MAX_PASSWORD 257 // 256+1 for null terminator
 
+bool verbose = false;
+
 #include "pbkdf.h"
 #include "fcrypt.h"
 #include "types.h"
@@ -64,7 +66,7 @@ int main(int argc, char *argv[]) {
     printf("%s\n\n", BANNER);
 
     int c;
-    
+
     bool encrypt = false;
     bool decrypt = false;
 
@@ -81,11 +83,12 @@ int main(int argc, char *argv[]) {
     OUTPUT[0] = '\0';
     PASSWORD[0] = '\0';
 
-    while ((c = getopt(argc, argv, "hdei:o:p:")) != -1) { // TODO help 
+    while ((c = getopt(argc, argv, "hvdei:o:p:")) != -1) { // TODO help 
         switch (c) {
             case 'h':
                 printf("Usage: %s [options]\n", argv[0]);
                 printf("  -h             show this help message and exit\n");
+                printf("  -v             verbose\n");
                 printf("  -d             decrypt mode\n");
                 printf("  -e             encrypt mode\n");
                 printf("  -i <input>     input file\n");
@@ -114,6 +117,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'p':
                 PASSWORD = optarg;
+                break;
+            case 'v':
+                verbose = true;
                 break;
             default:
                 fprintf(stderr, "unknown option: %c\n", c);
@@ -187,6 +193,7 @@ int main(int argc, char *argv[]) {
 
     init_fcrypt_ctx(ctx, PASSWORD, strlen(PASSWORD), iv);
 
+    if(verbose) printf("opening input file: %s\n", INPUT);
     FILE *input_file = fopen(INPUT, "rb");
     if(input_file == NULL) {
         fprintf(stderr, "error opening input file!\n");
@@ -195,7 +202,9 @@ int main(int argc, char *argv[]) {
         free(INPUT);
         return 1;
     }
-
+    if(verbose) printf("successfully opened input file!\n");
+    
+    if(verbose) printf("opening output file: %s\n", OUTPUT);
     FILE *output_file = fopen(OUTPUT, "wb");
     if(output_file == NULL) {
         fprintf(stderr, "error opening output file!\n");
@@ -204,6 +213,7 @@ int main(int argc, char *argv[]) {
         free(INPUT);
         return 1;
     }
+    if(verbose) printf("successfully opened output file!\n");
 
     if(encrypt) {
         u8 *plaintext = read_raw(ctx, input_file);
@@ -231,7 +241,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        fwrite(plaintext, sizeof(u8), ctx->data_size-16, output_file); // i don't really know why but it works correctly only if i subtract 16 from data_size
+        fwrite(plaintext, sizeof(u8), ctx->data_size - 16, output_file); // i don't really know why but it works correctly only if i subtract 16 from data_size
         fclose(output_file);
 
         free(ctx);
