@@ -1,5 +1,11 @@
 CC = gcc
-CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude -g
+CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude -O3 
+CFLAGS += -D_FORTIFY_SOURCE=3\
+-D_GLIBCXX_ASSERTIONS\
+-ftrivial-auto-var-init=zero\
+-fPIE  -pie\
+-fstack-protector-strong\
+-fstack-clash-protection
 
 OBJDIR = build
 
@@ -24,7 +30,7 @@ OBJS = $(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -lssl -lcrypto
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -lssl -lcrypto -fstack-protector-strong -fstack-clash-protection 
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@

@@ -6,7 +6,7 @@ u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr) {
     ctx->data_size = ftell(fptr);
     fseek(fptr, 0, SEEK_SET);
 
-    u8 *buffer = (u8 *)malloc(ctx->data_size + 1);
+    u8 *buffer = (u8 *)calloc(ctx->data_size + 1, 1);
     if(buffer == NULL) {
         fprintf(stderr, "error allocating memory\n");
         return NULL;
@@ -57,19 +57,21 @@ u8 *read_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr) {
     ctx->data_size = ftell(fptr) - 32;
     fseek(fptr, 0, SEEK_SET);
 
-    u8 *password_from_file = (u8 *)malloc(32);
+    u8 *password_from_file = (u8 *)calloc(32, sizeof(u8));
     fread(password_from_file, sizeof(u8), 32, fptr);
 
     if(memcmp(password_from_file, ctx->password_hash, 32) == 0) {
-        u8 *plaintext = (u8 *)malloc(ctx->data_size);
-        u8 *ciphertext = (u8 *)malloc(ctx->data_size);
+        free(password_from_file);
+        u8 *plaintext = (u8 *)calloc(ctx->data_size, sizeof(u8));
+        u8 *ciphertext = (u8 *)calloc(ctx->data_size, sizeof(u8));
 
         fread(ciphertext, sizeof(u8), ctx->data_size, fptr);
 
         memcpy(ctx->iv, ciphertext, 16);
 
-        decrypt_data(ctx, ciphertext+16, ctx->data_size, plaintext);
-
+        decrypt_data(ctx, ciphertext+16, ctx->data_size-16, plaintext); // someday i will find out why this bug occurs
+        
+        free(ciphertext);
         return plaintext;
     } else {
         return NULL;
@@ -164,10 +166,12 @@ int decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, int ciphertext_len, u8 *plaint
 
     if(verbose) printf("decrypting data... (0/%d) chunks", (int)(plaintext_len/chunk_size));
     for (int i = 0; i < ciphertext_len; i += chunk_size) {
-        int chunk_len = ciphertext_len - i;
-        if (chunk_len > chunk_size) {
-            chunk_len = chunk_size;
-        }
+        // int chunk_len = ciphertext_len - i;
+        // if (chunk_len > chunk_size) {
+        //     chunk_len = chunk_size;
+        // }
+        int remaining_bytes = ciphertext_len - i;
+        int chunk_len = (remaining_bytes < chunk_size) ? remaining_bytes : chunk_size;
 
         if (EVP_DecryptUpdate(evp_ctx, plaintext + plaintext_len, &len, ciphertext + i, chunk_len) != 1) {
             fprintf(stderr, "error while decrypting data!\n");

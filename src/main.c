@@ -32,7 +32,9 @@
  */
 
 #include <stdio.h>
-#include <time.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <openssl/rand.h>
 #include <stdbool.h>
 #include <getopt.h>
@@ -47,6 +49,11 @@
 #endif
 
 #define MAX_PASSWORD 257 // 256+1 for null terminator
+
+#define FREE_INPUTS \
+        free(INPUT); \
+        free(OUTPUT); \
+        free(PASSWORD);
 
 bool verbose = false;
 
@@ -70,12 +77,13 @@ int main(int argc, char *argv[]) {
     bool encrypt = false;
     bool decrypt = false;
 
-    char *INPUT = (char *)malloc(MAX_PATH);
-    char *OUTPUT = (char *)malloc(MAX_PATH);
-    char *PASSWORD = (char *)malloc(MAX_PASSWORD);
+    char *INPUT = (char *)calloc(MAX_PATH, sizeof(char));
+    char *OUTPUT = (char *)calloc(MAX_PATH, sizeof(char));
+    char *PASSWORD = (char *)calloc(MAX_PASSWORD, sizeof(char));
 
     if(INPUT == NULL || OUTPUT == NULL || PASSWORD == NULL) {
         fprintf(stderr, "memory allocation failed!\n");
+        FREE_INPUTS
         return 1;
     }
 
@@ -83,7 +91,7 @@ int main(int argc, char *argv[]) {
     OUTPUT[0] = '\0';
     PASSWORD[0] = '\0';
 
-    while ((c = getopt(argc, argv, "hvdei:o:p:")) != -1) { // TODO help 
+    while ((c = getopt(argc, argv, "hvdei:o:p:")) != -1) {
         switch (c) {
             case 'h':
                 printf("Usage: %s [options]\n", argv[0]);
@@ -98,6 +106,9 @@ int main(int argc, char *argv[]) {
             case 'e':
                 if (decrypt) {
                     fprintf(stderr, "cannot set both -e and -d options\n");
+                    free(INPUT);
+                    free(OUTPUT);
+                    free(PASSWORD);
                     return 1;
                 }
                 encrypt = true;
@@ -105,64 +116,65 @@ int main(int argc, char *argv[]) {
             case 'd':
                 if (encrypt) {
                     fprintf(stderr, "cannot set both -e and -d options\n");
+                    free(INPUT);
+                    free(OUTPUT);
+                    free(PASSWORD);
                     return 1;
                 }
                 decrypt = true;
                 break;
             case 'o':
-                OUTPUT = optarg;
+                strncpy(OUTPUT, optarg, MAX_PATH - 1);
                 break;
             case 'i':
-                INPUT = optarg;
+                strncpy(INPUT, optarg, MAX_PATH - 1);
                 break;
             case 'p':
-                PASSWORD = optarg;
+                strncpy(PASSWORD, optarg, MAX_PASSWORD - 1);
                 break;
             case 'v':
                 verbose = true;
                 break;
             default:
                 fprintf(stderr, "unknown option: %c\n", c);
+                free(INPUT);
+                free(OUTPUT);
+                free(PASSWORD);
                 return 1;
         }
     }
 
     if(!(encrypt || decrypt)) {
         fprintf(stderr, "encryption or decryption not specified!\n");
-        free(INPUT);
-        free(OUTPUT);
-        free(PASSWORD);
+        FREE_INPUTS
         return 1;
     }
 
     if (!INPUT || strlen(INPUT) == 0) {
         fprintf(stderr, "input file not specified!\n");
-        free(INPUT);
-        free(OUTPUT);
-        free(PASSWORD);
+        FREE_INPUTS
         return 1;
     }
 
     if (!OUTPUT || strlen(OUTPUT) == 0) {
         fprintf(stderr, "output file not specified!\n");
-        free(INPUT);
-        free(OUTPUT);
-        free(PASSWORD);
+        FREE_INPUTS
         return 1;
     }
 
 
     if (!PASSWORD || strlen(PASSWORD) == 0) {
+        const char *prompt = "password (max 256 characters): ";
         #ifdef _WIN32
-            printf("password: ");
+            printf(prompt);
             fflush(stdout);
 
             while (1) {
-                int ch = _getch();
+                char ch = _getch();
                 if(ch == 0x03) {
-                    free(PASSWORD);
                     free(OUTPUT);
                     free(INPUT);
+                    free(PASSWORD);
                     return 0;
                 }
                 if (ch == '\r' || ch == '\n') {
@@ -175,31 +187,52 @@ int main(int argc, char *argv[]) {
                     }
                 } else {
                     printf("*");
-                    strncat(PASSWORD, (char[2]){ch, '\0'}, 1);
+
+                    if (strlen(PASSWORD) + 1 < MAX_PASSWORD) {
+                        strncat(PASSWORD, &ch, 1);
+                    } else {
+                        fprintf(stderr, "\npassword is too long! EXITING!\n");
+                        free(INPUT);
+                        free(OUTPUT);
+                        free(PASSWORD);
+                        return 1;
+                    }
                 }
             }
             PASSWORD[strlen(PASSWORD)] = '\0';
             printf("\n");
         #else
             fflush(stdout);
-            char *password_ptr = getpass("password: ");
-            strcpy(PASSWORD, password_ptr);
-            free(password_ptr);
+            char *password_ptr = getpass(prompt);
+            strncpy(PASSWORD, password_ptr, sizeof(PASSWORD) - 1);
         #endif
     }
 
     FCRYPT_CTX *ctx = (FCRYPT_CTX *)malloc(sizeof(FCRYPT_CTX));
-    u8 *iv = (u8 *)malloc(16);
+    if (!ctx) {
+        fprintf(stderr, "error initializing fcrypt context!\n");
+        FREE_INPUTS
+        return 1;
+    }
+
+    u8 *iv = (u8 *)calloc(16, 1);
+    if (!iv) {
+        fprintf(stderr, "error allocating IV!\n");
+        free(ctx);
+        FREE_INPUTS
+        return 1;
+    }
 
     init_fcrypt_ctx(ctx, PASSWORD, strlen(PASSWORD), iv);
+    memset(PASSWORD, 0, MAX_PASSWORD);
 
     if(verbose) printf("opening input file: %s\n", INPUT);
     FILE *input_file = fopen(INPUT, "rb");
     if(input_file == NULL) {
         fprintf(stderr, "error opening input file!\n");
-        free(PASSWORD);
-        free(OUTPUT);
-        free(INPUT);
+        free(iv);
+        free(ctx);
+        FREE_INPUTS
         return 1;
     }
     if(verbose) printf("successfully opened input file!\n");
@@ -208,9 +241,11 @@ int main(int argc, char *argv[]) {
     FILE *output_file = fopen(OUTPUT, "wb");
     if(output_file == NULL) {
         fprintf(stderr, "error opening output file!\n");
-        free(PASSWORD);
-        free(OUTPUT);
+        fclose(input_file);
+        free(iv);
+        free(ctx);
         free(INPUT);
+        free(OUTPUT);
         return 1;
     }
     if(verbose) printf("successfully opened output file!\n");
@@ -221,20 +256,15 @@ int main(int argc, char *argv[]) {
 
         write_fcrypt_file(ctx, output_file, plaintext);
         fclose(output_file);
-
-        free(ctx);
-        free(iv);
-        free(PASSWORD);
-        free(INPUT);
-        free(OUTPUT);
-        return 0;
+        free(plaintext);
     } else if (decrypt) {
         u8 *plaintext = read_fcrypt_file(ctx, input_file);
         fclose(input_file);
         if(plaintext == NULL) {
             fprintf(stderr, "wrong password!\n");
-            free(ctx);
+            fclose(output_file);
             free(iv);
+            free(ctx);
             free(PASSWORD);
             free(INPUT);
             free(OUTPUT);
@@ -243,13 +273,13 @@ int main(int argc, char *argv[]) {
 
         fwrite(plaintext, sizeof(u8), ctx->data_size - 16, output_file); // i don't really know why but it works correctly only if i subtract 16 from data_size
         fclose(output_file);
-
-        free(ctx);
-        free(iv);
-        free(PASSWORD);
-        free(INPUT);
-        free(OUTPUT);
-        return 0;
+        free(plaintext);
     }
-    
+
+    free(ctx);
+    free(iv);
+    free(PASSWORD);
+    free(INPUT);
+    free(OUTPUT);
+    return 0;    
 }
