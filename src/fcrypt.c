@@ -74,6 +74,7 @@ u8 *read_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr) {
         free(ciphertext);
         return plaintext;
     } else {
+        free(password_from_file);
         return NULL;
     }
 }

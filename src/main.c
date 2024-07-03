@@ -150,20 +150,20 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!INPUT || strlen(INPUT) == 0) {
+    if (strlen(INPUT) == 0) {
         fprintf(stderr, "input file not specified!\n");
         FREE_INPUTS
         return 1;
     }
 
-    if (!OUTPUT || strlen(OUTPUT) == 0) {
+    if (strlen(OUTPUT) == 0) {
         fprintf(stderr, "output file not specified!\n");
         FREE_INPUTS
         return 1;
     }
 
 
-    if (!PASSWORD || strlen(PASSWORD) == 0) {
+    if (strlen(PASSWORD) == 0) {
         const char *prompt = "password (max 256 characters): ";
         #ifdef _WIN32
             printf(prompt);
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
         #else
             fflush(stdout);
             char *password_ptr = getpass(prompt);
-            strncpy(PASSWORD, password_ptr, sizeof(PASSWORD) - 1);
+            strncpy(PASSWORD, password_ptr, MAX_PASSWORD - 1);
         #endif
     }
 
