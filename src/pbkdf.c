@@ -1,7 +1,5 @@
 #include "pbkdf.h"
 
-u32 NONCE[3] = {0x14159265, 0x35897932, 0x38462643}; // pi
-
 void pbkdf(char *password, size_t password_len, u8 *key, size_t key_size) {
     u8 salt[] = {
         0x61, 0x20, 0x6e, 0x6f,

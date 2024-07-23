@@ -1,23 +1,20 @@
 CC = gcc
-CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude -O3 
+CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude -O3
 CFLAGS += -D_FORTIFY_SOURCE=3\
 -D_GLIBCXX_ASSERTIONS\
 -ftrivial-auto-var-init=zero\
--fPIE  -pie\
--fstack-protector-strong\
--fstack-clash-protection
+-fPIE -pie
 
 OBJDIR = build
+LIBS = -lssl -lcrypto
 
 ifeq ($(OS),Windows_NT)
     RM = del /f /q
     TARGET = $(OBJDIR)\fcrypt.exe
-    LIBS =
     MKDIR = mkdir
 else
     RM = rm -f
     TARGET = $(OBJDIR)/fcrypt
-    LIBS =
     MKDIR = mkdir -p
 endif
 
@@ -30,7 +27,7 @@ OBJS = $(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -lssl -lcrypto -fstack-protector-strong -fstack-clash-protection 
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -fstack-protector-strong -fstack-clash-protection 
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@

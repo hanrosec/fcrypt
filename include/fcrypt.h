@@ -8,7 +8,6 @@
 
 #include "types.h"
 #include "pbkdf.h"
-#include "sha3.h"
 
 extern bool verbose;
 

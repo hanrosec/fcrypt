@@ -15,15 +15,7 @@
 
 #include "types.h"
 
-extern u32 NONCE[3]; 
-/**
- * nonce is not really nonce here, but is used only because chacha requires it
- * I think it can be fixed because we are not reusing keys (this is user password)
-*/
-
 void pbkdf(char *password, size_t password_len, u8 *key, size_t key_size);
-
-void process_password(u8 *password, size_t password_len, u8 *processed);
-void u8_to_u32(u8 *src, u32 *dst);
+void sha3_256(const unsigned char *data, size_t data_len, unsigned char *hash);
 
 #endif /* _PBKDF_H */

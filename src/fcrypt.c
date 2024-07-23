@@ -87,11 +87,9 @@ void init_fcrypt_ctx(FCRYPT_CTX *ctx, char *password, u8 password_len, u8 *iv) {
      */
     u8 key[sizeof(ctx->key)];
     
-    // memcpy(ctx->iv, iv, iv_SIZE);
-    // memcpy doesn't work
     memcpy(ctx->iv, iv, sizeof(ctx->iv));
 
-    sha3(password, password_len, ctx->password_hash, 32);
+    sha3_256((const unsigned char *)password, password_len, ctx->password_hash);
 
     pbkdf(password, password_len, key, 32);
 
@@ -196,4 +194,30 @@ int decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, int ciphertext_len, u8 *plaint
     EVP_CIPHER_CTX_free(evp_ctx);
 
     return plaintext_len;
+}
+
+void sha3_256(const unsigned char *data, size_t data_len, unsigned char *hash) {
+    EVP_MD_CTX *mdctx;
+    if((mdctx = EVP_MD_CTX_new()) == NULL) {
+        perror("EVP_MD_CTX_new");
+        exit(EXIT_FAILURE);
+    }
+
+    if(1 != EVP_DigestInit_ex(mdctx, EVP_sha3_256(), NULL)) {
+        perror("EVP_DigestInit_ex");
+        exit(EXIT_FAILURE);
+    }
+
+    if(1 != EVP_DigestUpdate(mdctx, data, data_len)) {
+        perror("EVP_DigestUpdate");
+        exit(EXIT_FAILURE);
+    }
+
+    unsigned int hash_len;
+    if(1 != EVP_DigestFinal_ex(mdctx, hash, &hash_len)) {
+        perror("EVP_DigestFinal_ex");
+        exit(EXIT_FAILURE);
+    }
+
+    EVP_MD_CTX_free(mdctx);
 }
