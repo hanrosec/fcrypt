@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 
     if(INPUT == NULL || OUTPUT == NULL || PASSWORD == NULL) {
         fprintf(stderr, "memory allocation failed!\n");
-        FREE_INPUTS
+        FREE_INPUTS;
         return 1;
     }
 
@@ -106,9 +106,7 @@ int main(int argc, char *argv[]) {
             case 'e':
                 if (decrypt) {
                     fprintf(stderr, "cannot set both -e and -d options\n");
-                    free(INPUT);
-                    free(OUTPUT);
-                    free(PASSWORD);
+                    FREE_INPUTS;
                     return 1;
                 }
                 encrypt = true;
@@ -116,9 +114,7 @@ int main(int argc, char *argv[]) {
             case 'd':
                 if (encrypt) {
                     fprintf(stderr, "cannot set both -e and -d options\n");
-                    free(INPUT);
-                    free(OUTPUT);
-                    free(PASSWORD);
+                    FREE_INPUTS;
                     return 1;
                 }
                 decrypt = true;
@@ -137,28 +133,26 @@ int main(int argc, char *argv[]) {
                 break;
             default:
                 fprintf(stderr, "unknown option: %c\n", c);
-                free(INPUT);
-                free(OUTPUT);
-                free(PASSWORD);
+                FREE_INPUTS;
                 return 1;
         }
     }
 
     if(!(encrypt || decrypt)) {
         fprintf(stderr, "encryption or decryption not specified!\n");
-        FREE_INPUTS
+        FREE_INPUTS;
         return 1;
     }
 
     if (strlen(INPUT) == 0) {
         fprintf(stderr, "input file not specified!\n");
-        FREE_INPUTS
+        FREE_INPUTS;
         return 1;
     }
 
     if (strlen(OUTPUT) == 0) {
         fprintf(stderr, "output file not specified!\n");
-        FREE_INPUTS
+        FREE_INPUTS;
         return 1;
     }
 
@@ -173,9 +167,7 @@ int main(int argc, char *argv[]) {
                 char ch = _getch();
                 if(ch == 0x03) {
                     free(OUTPUT);
-                    free(INPUT);
-                    free(PASSWORD);
-                    return 0;
+                    FREE_INPUTS;
                 }
                 if (ch == '\r' || ch == '\n') {
                     break;
@@ -192,9 +184,7 @@ int main(int argc, char *argv[]) {
                         strncat(PASSWORD, &ch, 1);
                     } else {
                         fprintf(stderr, "\npassword is too long! EXITING!\n");
-                        free(INPUT);
-                        free(OUTPUT);
-                        free(PASSWORD);
+                        FREE_INPUTS;
                         return 1;
                     }
                 }
@@ -211,7 +201,7 @@ int main(int argc, char *argv[]) {
     FCRYPT_CTX *ctx = (FCRYPT_CTX *)malloc(sizeof(FCRYPT_CTX));
     if (!ctx) {
         fprintf(stderr, "error initializing fcrypt context!\n");
-        FREE_INPUTS
+        FREE_INPUTS;
         return 1;
     }
 
@@ -219,7 +209,7 @@ int main(int argc, char *argv[]) {
     if (!iv) {
         fprintf(stderr, "error allocating IV!\n");
         free(ctx);
-        FREE_INPUTS
+        FREE_INPUTS;
         return 1;
     }
 
@@ -232,7 +222,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "error opening input file!\n");
         free(iv);
         free(ctx);
-        FREE_INPUTS
+        FREE_INPUTS;
         return 1;
     }
     if(verbose) printf("successfully opened input file!\n");
@@ -244,9 +234,7 @@ int main(int argc, char *argv[]) {
         fclose(input_file);
         free(iv);
         free(ctx);
-        free(INPUT);
-        free(OUTPUT);
-        return 1;
+        FREE_INPUTS;
     }
     if(verbose) printf("successfully opened output file!\n");
 
@@ -265,10 +253,7 @@ int main(int argc, char *argv[]) {
             fclose(output_file);
             free(iv);
             free(ctx);
-            free(PASSWORD);
-            free(INPUT);
-            free(OUTPUT);
-            return 1;
+            FREE_INPUTS;
         }
 
         fwrite(plaintext, sizeof(u8), ctx->data_size - 16, output_file); // i don't really know why but it works correctly only if i subtract 16 from data_size
@@ -278,8 +263,5 @@ int main(int argc, char *argv[]) {
 
     free(ctx);
     free(iv);
-    free(PASSWORD);
-    free(INPUT);
-    free(OUTPUT);
-    return 0;    
+    FREE_INPUTS;
 }

@@ -56,6 +56,9 @@ u8 *read_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr) {
     fseek(fptr, 0, SEEK_END);
     ctx->data_size = ftell(fptr) - 32;
     fseek(fptr, 0, SEEK_SET);
+    
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result" 
 
     u8 *password_from_file = (u8 *)calloc(32, sizeof(u8));
     fread(password_from_file, sizeof(u8), 32, fptr);
@@ -66,6 +69,8 @@ u8 *read_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr) {
         u8 *ciphertext = (u8 *)calloc(ctx->data_size, sizeof(u8));
 
         fread(ciphertext, sizeof(u8), ctx->data_size, fptr);
+        
+        #pragma GCC diagnostic pop 
 
         memcpy(ctx->iv, ciphertext, 16);
 
