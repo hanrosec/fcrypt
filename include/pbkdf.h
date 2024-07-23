@@ -1,12 +1,3 @@
-/**
- * ChaCha20-based Key derivation function
- * Counter is set to 0 as default, but it can be arbitrary
- * Counter will be incresed if derived key need to be longer than 16 bytes
- * Nonce is fixed
- * Key is password (max 32 characters) (must be padded to size of 32 characters)
- * Derived key is first n number of bytes of key schedule
- */
-
 #ifndef _PBKDF_H
 #define _PBKDF_H
 
