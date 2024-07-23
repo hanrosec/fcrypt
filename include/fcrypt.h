@@ -27,4 +27,6 @@ u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr);
 u8 *read_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr);
 void write_fcrypt_file(FCRYPT_CTX *ctx, FILE *fptr, u8 *data);
 
+void sha3_256(const unsigned char *data, size_t data_len, unsigned char *hash);
+
 #endif /* _FCRYPT_H */
