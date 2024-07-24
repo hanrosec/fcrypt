@@ -1,6 +1,5 @@
 .vscode
 build
 .idea
-tests/bins/*
-tests/txts/*
+tests/*
 test.sh
