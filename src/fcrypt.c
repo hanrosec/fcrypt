@@ -8,7 +8,7 @@ u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr) {
 
     u8 *buffer = (u8 *)calloc(ctx->data_size + 1, 1);
     if(buffer == NULL) {
-        fprintf(stderr, "error allocating memory\n");
+        perror("error allocating memory\n");
         return NULL;
     }
 
@@ -16,7 +16,7 @@ u8 *read_raw(FCRYPT_CTX *ctx, FILE *fptr) {
     int i = 0;
     while((ch = getc(fptr))!= EOF) {
         if(i >= ctx->data_size) {
-            fprintf(stderr, "buffer overflow\n");
+            perror("buffer overflow\n");
             free(buffer);
             return NULL;
         }
@@ -91,33 +91,31 @@ void init_fcrypt_ctx(FCRYPT_CTX *ctx, char *password, u8 password_len, u8 *iv) {
      * 3. set key in ctx
      */
     u8 key[sizeof(ctx->key)];
-    
     memcpy(ctx->iv, iv, sizeof(ctx->iv));
 
     sha3_256((const unsigned char *)password, password_len, ctx->password_hash);
-
     pbkdf(password, password_len, key, 32);
 
     memcpy(ctx->key, key, sizeof(ctx->key));
 }
 
 int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *ciphertext) {
-    EVP_CIPHER_CTX *evp_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX *evp_ctx;
     
-    if(evp_ctx == NULL) {
-        fprintf(stderr, "error while creating EVP_CIPHER_CTX!\n");
+    if((evp_ctx = EVP_CIPHER_CTX_new()) == NULL) {
+        perror("error while creating EVP_CIPHER_CTX!\n");
         EVP_CIPHER_CTX_free(evp_ctx);
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     int len;
     int ciphertext_len = 0;
     int chunk_size = 16;
 
-    if (EVP_EncryptInit_ex(evp_ctx, EVP_aes_256_ctr(), NULL, ctx->key, ctx->iv) != 1) {
-        fprintf(stderr, "error while initializing encryption!\n");
+    if (1 != EVP_EncryptInit_ex(evp_ctx, EVP_aes_256_ctr(), NULL, ctx->key, ctx->iv)) {
+        perror("error while initializing encryption!\n");
         EVP_CIPHER_CTX_free(evp_ctx);
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     if(verbose) printf("encrypting data... (0/%d) chunks", (int)(plaintext_len/chunk_size));
@@ -126,10 +124,10 @@ int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *cipherte
         if (chunk_len > chunk_size) {
             chunk_len = chunk_size;
         }
-        if (EVP_EncryptUpdate(evp_ctx, ciphertext + ciphertext_len, &len, plaintext + i, chunk_len) != 1) {
-            fprintf(stderr, "error while encrypting!\n");
+        if (1 != EVP_EncryptUpdate(evp_ctx, ciphertext + ciphertext_len, &len, plaintext + i, chunk_len)) {
+            perror("error while encrypting!\n");
             EVP_CIPHER_CTX_free(evp_ctx);
-            return -1;
+            exit(EXIT_FAILURE);
         }
         ciphertext_len += len;
         if(verbose) printf("\rencrypting data... (%d/%d) chunks", (int)(i/chunk_size), (int)(plaintext_len/chunk_size)-1);
@@ -137,10 +135,10 @@ int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *cipherte
     }
     if(verbose) printf("\nsuccessfully encrypted data!\n");
 
-    if (EVP_EncryptFinal_ex(evp_ctx, ciphertext + ciphertext_len, &len) != 1) {
-        fprintf(stderr, "error while finalizing encryption!\n");
+    if (1 != EVP_EncryptFinal_ex(evp_ctx, ciphertext + ciphertext_len, &len)) {
+        perror("error while finalizing encryption!\n");
         EVP_CIPHER_CTX_free(evp_ctx);
-        return -1;
+        exit(EXIT_FAILURE);
     }
     ciphertext_len += len;
 
@@ -150,37 +148,33 @@ int encrypt_data(FCRYPT_CTX *ctx, u8 *plaintext, int plaintext_len, u8 *cipherte
 }
 
 int decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, int ciphertext_len, u8 *plaintext) {
-    EVP_CIPHER_CTX *evp_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX *evp_ctx;
 
-    if(evp_ctx == NULL) {
-        fprintf(stderr, "error while creating EVP_CIPHER_CTX!\n");
+    if((evp_ctx = EVP_CIPHER_CTX_new()) == NULL) {
+        perror("error while creating EVP_CIPHER_CTX!\n");
         EVP_CIPHER_CTX_free(evp_ctx);
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     int len;
     int plaintext_len = 0;
     int chunk_size = 16;
 
-    if(EVP_DecryptInit_ex(evp_ctx, EVP_aes_256_ctr(), NULL, ctx->key, ctx->iv) != 1) {
-        fprintf(stderr, "error while initializing decryption!\n");
+    if(1 != EVP_DecryptInit_ex(evp_ctx, EVP_aes_256_ctr(), NULL, ctx->key, ctx->iv)) {
+        perror("error while initializing decryption!\n");
         EVP_CIPHER_CTX_free(evp_ctx);
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     if(verbose) printf("decrypting data... (0/%d) chunks", (int)(plaintext_len/chunk_size));
     for (int i = 0; i < ciphertext_len; i += chunk_size) {
-        // int chunk_len = ciphertext_len - i;
-        // if (chunk_len > chunk_size) {
-        //     chunk_len = chunk_size;
-        // }
         int remaining_bytes = ciphertext_len - i;
         int chunk_len = (remaining_bytes < chunk_size) ? remaining_bytes : chunk_size;
 
-        if (EVP_DecryptUpdate(evp_ctx, plaintext + plaintext_len, &len, ciphertext + i, chunk_len) != 1) {
-            fprintf(stderr, "error while decrypting data!\n");
+        if (1 != EVP_DecryptUpdate(evp_ctx, plaintext + plaintext_len, &len, ciphertext + i, chunk_len)) {
+            perror("error while decrypting data!\n");
             EVP_CIPHER_CTX_free(evp_ctx);
-            return -1;
+            exit(EXIT_FAILURE);
         }
         plaintext_len += len;
         if(verbose) printf("\rdecrypting data... (%d/%d) chunks", (int)(i/chunk_size), (int)(ciphertext_len/chunk_size)-1);
@@ -189,10 +183,10 @@ int decrypt_data(FCRYPT_CTX *ctx, u8 *ciphertext, int ciphertext_len, u8 *plaint
     if(verbose) printf("\nsuccessfully decrypted data!\n");
 
 
-    if (EVP_DecryptFinal_ex(evp_ctx, plaintext + plaintext_len, &len) != 1) {
-        fprintf(stderr, "error while finalizing decryption!\n");
+    if (1 != EVP_DecryptFinal_ex(evp_ctx, plaintext + plaintext_len, &len)) {
+        perror("error while finalizing decryption!\n");
         EVP_CIPHER_CTX_free(evp_ctx);
-        return -1;
+        exit(EXIT_FAILURE);
     }
     plaintext_len += len;
 
@@ -218,7 +212,7 @@ void sha3_256(const unsigned char *data, size_t data_len, unsigned char *hash) {
         exit(EXIT_FAILURE);
     }
 
-    unsigned int hash_len;
+    u32 hash_len;
     if(1 != EVP_DigestFinal_ex(mdctx, hash, &hash_len)) {
         perror("EVP_DigestFinal_ex");
         exit(EXIT_FAILURE);

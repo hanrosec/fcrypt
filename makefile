@@ -27,7 +27,7 @@ OBJS = $(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -fstack-protector-strong -fstack-clash-protection 
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -fstack-protector-strong -fstack-clash-protection -s
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@

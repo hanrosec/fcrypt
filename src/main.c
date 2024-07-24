@@ -163,25 +163,27 @@ int main(int argc, char *argv[]) {
             printf(prompt);
             fflush(stdout);
 
+            u8 password_len = 0;
+
             while (1) {
                 char ch = _getch();
-                if(ch == 0x03) {
+                if(ch == 0x03) { // handle ctrl+c
                     free(OUTPUT);
                     FREE_INPUTS;
                 }
-                if (ch == '\r' || ch == '\n') {
+                if (ch == '\r' || ch == '\n') { // handle enter
                     break;
                 }
-                if (ch == '\b') {
-                    if (strlen(PASSWORD) > 0) {
+                if (ch == '\b') { // handle backspace
+                    if (password_len > 0) {
                         printf("\b \b");
-                        PASSWORD[strlen(PASSWORD) - 1] = '\0';
+                        PASSWORD[password_len - 1] = '\0';
                     }
                 } else {
-                    printf("*");
-
-                    if (strlen(PASSWORD) + 1 < MAX_PASSWORD) {
-                        strncat(PASSWORD, &ch, 1);
+                    if (password_len + 1 < MAX_PASSWORD) {
+                        printf("*");
+                        PASSWORD[password_len++] = ch;
+                        PASSWORD[password_len] = '\0';
                     } else {
                         fprintf(stderr, "\npassword is too long! EXITING!\n");
                         FREE_INPUTS;
@@ -189,9 +191,9 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
-            PASSWORD[strlen(PASSWORD)] = '\0';
+            PASSWORD[password_len] = '\0';
             printf("\n");
-        #else
+        #else // linux
             fflush(stdout);
             char *password_ptr = getpass(prompt);
             strncpy(PASSWORD, password_ptr, MAX_PASSWORD - 1);
@@ -217,7 +219,9 @@ int main(int argc, char *argv[]) {
     memset(PASSWORD, 0, MAX_PASSWORD);
 
     if(verbose) printf("opening input file: %s\n", INPUT);
+    
     FILE *input_file = fopen(INPUT, "rb");
+
     if(input_file == NULL) {
         fprintf(stderr, "error opening input file!\n");
         free(iv);
