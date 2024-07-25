@@ -8,14 +8,13 @@ CFLAGS += -D_FORTIFY_SOURCE=3\
 OBJDIR = build
 LIBS = -lssl -lcrypto
 
+RM = rm -f
+MKDIR = mkdir
+
 ifeq ($(OS),Windows_NT)
-    RM = del /f /q
     TARGET = $(OBJDIR)\fcrypt.exe
-    MKDIR = mkdir
 else
-    RM = rm -f
     TARGET = $(OBJDIR)/fcrypt
-    MKDIR = mkdir -p
 endif
 
 SRCDIR = src
@@ -39,10 +38,5 @@ run: $(TARGET)
 	./$(TARGET)
 
 clean:
-ifeq ($(OS),Windows_NT)
-	$(RM) $(OBJDIR)\*.o
-	$(RM) $(TARGET)
-else
 	$(RM) $(OBJDIR)/*.o
 	$(RM) $(TARGET)
-endif
